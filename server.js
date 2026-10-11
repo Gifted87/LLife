@@ -2,7 +2,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { DatabaseSync } = require('node:sqlite');
+const db = require('./db.js');
 
 // Load .env locally
 if (typeof process.loadEnvFile === 'function') {
@@ -13,27 +13,10 @@ if (typeof process.loadEnvFile === 'function') {
 
 const PORT = process.env.PORT || 3001;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Gexture187';
-const DB_PATH = path.join(__dirname, 'data.sqlite');
 
 function getExpectedToken() {
   return crypto.createHash('sha256').update(`lagos-admin:${ADMIN_PASSWORD}`).digest('hex');
 }
-
-// Initialize SQLite database
-const db = new DatabaseSync(DB_PATH);
-db.exec(`
-  CREATE TABLE IF NOT EXISTS records (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    input1 TEXT NOT NULL,
-    input2 TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
-`);
-
-const insertStmt = db.prepare('INSERT INTO records (input1, input2) VALUES (?, ?)');
-const selectAllStmt = db.prepare('SELECT * FROM records ORDER BY id DESC');
-const deleteOneStmt = db.prepare('DELETE FROM records WHERE id = ?');
-const deleteAllStmt = db.prepare('DELETE FROM records');
 
 // MIME types dictionary for static files
 const MIME_TYPES = {
@@ -114,13 +97,14 @@ const server = http.createServer((req, res) => {
           return;
         }
 
-        insertStmt.run(String(input1), String(input2));
+        db.addRecord(input1, input2);
         console.log(`[DB] Saved record: input1="${input1}", input2="***"`);
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           success: true,
-          message: 'Saved to SQLite database successfully!'
+          message: 'Saved to database successfully!',
+          driver: db.getDriver()
         }));
       } catch (err) {
         console.error('[DB Error]', err);
@@ -141,9 +125,9 @@ const server = http.createServer((req, res) => {
 
     if (req.method === 'GET') {
       try {
-        const records = selectAllStmt.all();
+        const records = db.getRecords();
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, count: records.length, records }));
+        res.end(JSON.stringify({ success: true, count: records.length, driver: db.getDriver(), records }));
       } catch (err) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: err.message }));
@@ -156,11 +140,11 @@ const server = http.createServer((req, res) => {
       const id = parts[2];
       try {
         if (id) {
-          deleteOneStmt.run(Number(id));
+          db.deleteRecord(id);
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: true, message: `Record #${id} deleted.` }));
         } else {
-          deleteAllStmt.run();
+          db.clearRecords();
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: true, message: 'All records cleared.' }));
         }
@@ -201,8 +185,13 @@ const server = http.createServer((req, res) => {
   res.end('Method Not Allowed');
 });
 
-server.listen(PORT, () => {
-  console.log(`🚀 Lagos Life server running at http://localhost:${PORT}`);
-  console.log(`🔒 Admin Password configured from env: ${ADMIN_PASSWORD ? '******' : 'None'}`);
-  console.log(`📂 SQLite database initialized at ${DB_PATH}`);
-});
+// Only start listening when not running on Vercel Serverless
+if (!process.env.VERCEL) {
+  server.listen(PORT, () => {
+    console.log(`🚀 Lagos Life server running at http://localhost:${PORT}`);
+    console.log(`🔒 Admin Password configured: ${ADMIN_PASSWORD ? '******' : 'None'}`);
+    console.log(`📂 Database driver: ${db.getDriver()}`);
+  });
+}
+
+module.exports = server;
