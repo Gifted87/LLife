@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lagos Life - Admin Records</title>
+  <meta name="description" content="View and manage stored records from Lagos Life SQLite database.">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'><text y='32' font-size='32'>👑</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="records.css">
+</head>
+
+<body>
+  <div class="records-container">
+    <!-- Navigation Bar -->
+    <nav class="records-nav-bar" id="recordsNavBar" aria-label="Main Navigation">
+      <div class="nav-group-left">
+        <a href="index.html" class="back-link" id="backToLoginBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          Back to Login
+        </a>
+
+        <div class="status-badge" id="serverStatusBadge">
+          <span class="status-dot"></span>
+          SQLite Connected
+        </div>
+      </div>
+
+      <div class="nav-group-right">
+        <a href="/api/records" target="_blank" class="api-link" title="Inspect raw JSON API endpoint">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+          JSON API
+        </a>
+
+        <button type="button" class="logout-btn" id="adminLogoutBtn" style="display: none;" title="Lock Admin Session">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          Lock
+        </button>
+      </div>
+    </nav>
+
+    <!-- Brand Header -->
+    <header class="brand-header">
+      <div class="crown-icon-wrapper" aria-hidden="true">
+        <svg class="crown-svg" viewBox="0 0 72 56" width="60" height="48" fill="none"
+          xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#FFDF6D" />
+              <stop offset="50%" stop-color="#F5B938" />
+              <stop offset="100%" stop-color="#DF9514" />
+            </linearGradient>
+            <linearGradient id="gemGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#34D399" />
+              <stop offset="100%" stop-color="#059669" />
+            </linearGradient>
+            <filter id="crownGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#D97706" flood-opacity="0.25" />
+            </filter>
+          </defs>
+          <g filter="url(#crownGlow)">
+            <path d="M7 16L19 38H53L65 16L47 27L36 7L25 27L7 16Z" fill="url(#goldGrad)" stroke="#B47206"
+              stroke-width="1.5" stroke-linejoin="round" />
+            <circle cx="7" cy="15" r="3" fill="#FFE27A" stroke="#B47206" stroke-width="1" />
+            <circle cx="65" cy="15" r="3" fill="#FFE27A" stroke="#B47206" stroke-width="1" />
+            <circle cx="36" cy="6" r="3.5" fill="#FFE27A" stroke="#B47206" stroke-width="1" />
+            <polygon points="36,18 41,25 36,32 31,25" fill="url(#gemGrad)" stroke="#047857" stroke-width="1" />
+            <polygon points="36,19 39,25 36,26 33,25" fill="#6EE7B7" opacity="0.8" />
+            <circle cx="21" cy="27" r="2" fill="#E89B13" />
+            <circle cx="51" cy="27" r="2" fill="#E89B13" />
+          </g>
+          <g>
+            <rect x="18" y="38" width="36" height="8" rx="2" fill="#FFFFFF" stroke="#2D3748" stroke-width="1.2" />
+            <path d="M19 39H30V45H19C18.45 45 18 44.55 18 44V40C18 39.45 18.45 39 19 39Z" fill="#008751" />
+            <path d="M42 39H53C53.55 39 54 39.45 54 40V44C54 44.55 53.55 45 53 45H42V39Z" fill="#008751" />
+            <rect x="18" y="38" width="36" height="8" rx="2" fill="none" stroke="#64748B" stroke-width="0.75" />
+          </g>
+        </svg>
+      </div>
+
+      <div class="brand-title-row">
+        <h1 class="brand-name">Admin Records</h1>
+        <span class="age-badge" id="dbTypeBadge">Protected</span>
+      </div>
+      <p class="brand-tagline">Secure access to saved records from Lagos Life auth forms.</p>
+    </header>
+
+    <!-- Admin Authentication Gate (Shown when not authenticated) -->
+    <div class="admin-gate-wrapper" id="adminGateWrapper">
+      <div class="admin-gate-card">
+        <div class="gate-icon-badge">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <h2 class="gate-title">Admin Access Required</h2>
+        <p class="gate-sub">Enter the administrator password configured in your environment to view records.</p>
+
+        <form class="gate-form" id="adminLoginForm">
+          <div class="form-group">
+            <label for="adminPassInput">Admin Passphrase</label>
+            <div class="input-wrapper has-icon-right">
+              <input type="password" id="adminPassInput" placeholder="Enter admin password..." autocomplete="current-password" required>
+              <button type="button" class="toggle-password" id="adminPassToggle" aria-label="Toggle password visibility">
+                <svg class="eye-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="gate-btn-unlock" id="adminUnlockBtn">
+            Unlock Admin Dashboard
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Admin Dashboard Content (Hidden until authenticated) -->
+    <div id="adminDashboardContent" style="display: none; display: flex; flex-direction: column; gap: 24px;">
+      <!-- KPI Summary Grid -->
+      <section class="kpi-grid" aria-label="Database Metrics">
+        <div class="kpi-card">
+          <div class="kpi-icon records">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+            </svg>
+          </div>
+          <div class="kpi-details">
+            <span class="kpi-title">Total Records</span>
+            <span class="kpi-value" id="kpiTotalCount">0</span>
+            <span class="kpi-sub" id="kpiFilteredSub">All stored entries</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon latest">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <div class="kpi-details">
+            <span class="kpi-title">Latest Entry</span>
+            <span class="kpi-value" id="kpiLatestUser">—</span>
+            <span class="kpi-sub" id="kpiLatestTime">No records yet</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon db">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <div class="kpi-details">
+            <span class="kpi-title">Engine</span>
+            <span class="kpi-value">node:sqlite</span>
+            <span class="kpi-sub">File: ./data.sqlite</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Main Dashboard Card -->
+      <main class="dashboard-card" id="dashboardCard">
+        <!-- Toolbar: Search & Action Buttons -->
+        <div class="dashboard-toolbar">
+          <div class="search-box">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="search" id="searchInput" class="search-input"
+              placeholder="Search records by username or ID..." autocomplete="off">
+          </div>
+
+          <div class="toolbar-actions">
+            <button type="button" class="btn-action btn-refresh" id="refreshBtn" title="Refresh records list">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+              Refresh
+            </button>
+
+            <button type="button" class="btn-action btn-clear" id="clearAllBtn" title="Clear all stored records">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              Clear All
+            </button>
+          </div>
+        </div>
+
+        <!-- Table View -->
+        <div class="table-responsive" id="tableWrapper">
+          <table class="records-table" id="recordsTable">
+            <thead>
+              <tr>
+                <th scope="col" style="width: 70px;">ID</th>
+                <th scope="col">Username (input1)</th>
+                <th scope="col">Password (input2)</th>
+                <th scope="col">Created At</th>
+                <th scope="col" style="text-align: right; width: 100px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="recordsTableBody">
+              <!-- Dynamically populated via records.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round">
+              <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+            </svg>
+          </div>
+          <h2 class="empty-title" id="emptyTitle">No records found</h2>
+          <p class="empty-sub" id="emptySub">Submit the login form to save records into the SQLite database.</p>
+          <a href="index.html" class="btn-add-record">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Go to Login Form
+          </a>
+        </div>
+      </main>
+    </div>
+
+    <!-- Success / Info / Error Toast -->
+    <div class="toast" id="toast" role="alert" aria-live="assertive"></div>
+  </div>
+
+  <script src="records.js"></script>
+</body>
+
+</html>

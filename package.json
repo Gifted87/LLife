@@ -1,0 +1,16 @@
+{
+  "name": "lagos-life",
+  "version": "1.0.0",
+  "description": "Lagos Life web application with SQLite database",
+  "main": "server.js",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
