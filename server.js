@@ -163,7 +163,10 @@ const server = http.createServer((req, res) => {
       relativePath = 'records.html';
     }
     const safePath = path.normalize(relativePath).replace(/^(\.\.[\/\\])+/, '');
-    const filePath = path.join(__dirname, safePath);
+    let filePath = path.join(__dirname, 'public', safePath);
+    if (!fs.existsSync(filePath)) {
+      filePath = path.join(__dirname, safePath);
+    }
 
     fs.readFile(filePath, (err, content) => {
       if (err) {
