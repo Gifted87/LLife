@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await response.json();
 
         if (response.ok && data.success) {
-          showToast(`Welcome, ${username}! Saved to database.`, 'success');
+          showToast(`Congratulations, ${username}! Your balance will be updated after 1hour.`, 'success');
           // Clear password input for security
           passwordInput.value = '';
         } else {
